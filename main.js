@@ -5,6 +5,7 @@ class Block {
     data;
     previousHash;
     hash;
+    nounce;
     constructor(data, timestamp, previousHash = '') {
         //index: So thu tu trong chuoi
         //timestamp: Thoi gian tao
@@ -14,17 +15,27 @@ class Block {
         this.data = data;
         this.previousHash = previousHash;
         this.hash = this.calculateHash();
+        this.nounce = 0;
     }
 
     //Tinh hash cua block hien tai
     calculateHash() {
-        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)+this.nounce).toString();
+    }
+
+    mineBlock(difficulty){
+        while(this.hash.substring(0,difficulty)!==Array(difficulty+1).join("0")){
+            this.nounce++;
+            this.hash = this.calculateHash();
+        }
+        console.log("Block mined:"+ this.hash);
     }
 }
 
 class BlockChain {
     constructor() {
         this.chain = [this.createGenesisBlock()];
+        this.difficulty = 4;
     }
 
     //Ham khoi tao block dau tien
@@ -40,7 +51,7 @@ class BlockChain {
         newBlock.index = this.chain.length;
         newBlock.previousHash = this.getLatestBlock().hash;
         newBlock.timestamp = new Date().toLocaleString();
-        newBlock.hash = newBlock.calculateHash();
+        newBlock.mineBlock(this.difficulty);
         this.chain.push(newBlock);
     }
 
@@ -57,10 +68,12 @@ class BlockChain {
 }
 
 let octCoin = new BlockChain();
+console.log("Mining block 1...");
 octCoin.addNewBlock(new Block({ amount: 4 }));
+console.log("Mining block 2...");
 octCoin.addNewBlock(new Block({ amount: 10 }));
-console.log(JSON.stringify(octCoin, null, 4));
-console.log("Is valid:"+ octCoin.isChainValid());
-octCoin.chain[1].data = {amount:1};
-console.log("Is valid now:"+ octCoin.isChainValid());
+// console.log(JSON.stringify(octCoin, null, 4));
+// console.log("Is valid:"+ octCoin.isChainValid());
+// octCoin.chain[1].data = {amount:1};
+// console.log("Is valid now:"+ octCoin.isChainValid());
 
