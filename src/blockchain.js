@@ -1,14 +1,65 @@
 const SHA256 = require('crypto-js/sha256');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
+
+class Transaction {
+    fromAddress;
+    toAddress;
+    amount;
+    signature;
+    constructor(fromAddress, toAddress, amount) {
+        this.fromAddress = fromAddress;
+        this.toAddress = toAddress;
+        this.amount = amount;
+    }
+
+    calculateHash(){
+        return SHA256(this.fromAddress + this.toAddress + this.amount).toString();
+    }
+
+    //signing key la key pair
+    //Sign mot transaction bang cac key
+    signTransaction(signingKey){
+
+        if(signingKey.getPublic('hex')!=this.fromAddress){
+            throw new Error('Cannot sign transactions for another wallets!');
+        }
+
+        const hashTx = this.calculateHash();
+        const signing = signingKey.sign(hashTx,'base64');
+        this.signature = signing.toDER('hex'); 
+    }
+
+    isValidTransaction(){
+        //Null nghia la tu he thong thuong cho miner
+        if(this.fromAddress == null){
+            return true;
+        }
+        //Khong co signature 
+        if(!this.signature || this.signature.length ===0){
+            throw new Error('No signature');
+        }
+        //Lay public key tu chu ky
+        const publicKey = ec.keyFromPublic(this.fromAddress,'hex');
+        //Verify la key do dung la tu chu ky do ma ra
+        return publicKey.verify(this.calculateHash(),this.signature);
+    }
+}
+
 class Block {
+            //timestamp: Thoi gian tao
+        //transactions: thong tin ve giao dich co the de o day
+        //previousHash: Hash cua block dang truoc
+        //hash: hash cua block hien tai
+        //nounce: so dung de tinh hash
     timestamp;
     transactions;
     previousHash;
     hash;
     nounce;
     constructor(transactions, timestamp, previousHash = '') {
-        //timestamp: Thoi gian tao
-        //data: Du lieu ( thong tin ve giao dich co the de o day)
-        //previousHash: Hash cua block dang truoc
+
+
         this.timestamp = timestamp;
         this.transactions = transactions;
         this.previousHash = previousHash;
@@ -22,19 +73,29 @@ class Block {
     }
 
     mineBlock(difficulty) {
+        //Tinh hash den khi thoa man do kho
         while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
             this.nounce++;
             this.hash = this.calculateHash();
         }
         console.log("Block mined:" + this.hash);
     }
+    //Check tat ca transaction trong block co valid khong
+    hasValidTransaction(){
+        for(const tx of this.transactions){
+            if(!tx.isValidTransaction()){
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 class BlockChain {
-    chain;
-    difficulty;
+    chain; //chain cac block voi nhau
+    difficulty; //do kho
     pendingTransactions; // Chua cac transaction doi
-    miningReward;
+    miningReward; //so thuong cho miner
     constructor() {
         this.chain = [this.createGenesisBlock()];
         this.difficulty = 2;
@@ -46,11 +107,11 @@ class BlockChain {
     createGenesisBlock() {
         return new Block("Genesis block", new Date().toLocaleString(), "0");
     }
-
+    //Ham lay block cuoi cung
     getLatestBlock() {
         return this.chain[this.chain.length - 1];
     }
-
+    //Mine cac transaction dang trong hang doi
     minePendingTransactions(miningRewardAddress) {
         let block = new Block(this.pendingTransactions, new Date().toLocaleString()); // pick a transactions instead of all trans
         block.previousHash = this.getLatestBlock().hash;
@@ -62,11 +123,18 @@ class BlockChain {
         ];
 
     }
+    //Tao ra 1 transaction
+    addTransaction(transaction) {
+        if(!transaction.fromAddress || !transaction.toAddress){
+            throw new Error('Transaction must have from and to address');
+        }
+        if(!transaction.isValidTransaction()){
+            throw new Error('Cannot add Invalid transaction to the chain');
+        }
 
-    createTransaction(transaction) {
         this.pendingTransactions.push(transaction);
     }
-
+    //Lay so coin co trong vi 
     getBalanceOfAddress(address) {
         let balance = 0;
         for (const block of this.chain) {
@@ -87,12 +155,15 @@ class BlockChain {
     //     newBlock.mineBlock(this.difficulty);
     //     this.chain.push(newBlock);
     // }
-
+    //Xet xem chain do co bi sua chua khong
     isChainValid() {
         for (let i = 1; i < this.chain.length; i++) {
             const currentBlock = this.chain[i];
             const previousBlock = this.chain[i - 1];
-            if ((currentBlock.hash != currentBlock.calculateHash()) || previousBlock.hash != currentBlock.previousHash) {
+            if(!currentBlock.hasValidTransaction()){
+                return false;
+            }
+            if ((currentBlock.hash !== currentBlock.calculateHash()) || previousBlock.hash !== currentBlock.previousHash) {
                 return false;
             }
         }
@@ -100,34 +171,6 @@ class BlockChain {
     }
 }
 
-class Transaction {
-    fromAddress;
-    toAddress;
-    amount;
-    constructor(fromAddress, toAddress, amount) {
-        this.fromAddress = fromAddress;
-        this.toAddress = toAddress;
-        this.amount = amount;
-    }
-}
 
-let octCoin = new BlockChain();
-octCoin.createTransaction(new Transaction('address1','address2',6));
-octCoin.createTransaction(new Transaction('address2','address1',9));
-console.log("\n Starting the miner...");
-octCoin.minePendingTransactions('miner address');
-console.log("\n Balance of miner is:",octCoin.getBalanceOfAddress('miner address'));
-console.log("\n Starting the miner again...");
-octCoin.minePendingTransactions('miner address');
-console.log("\n Balance of miner is:",octCoin.getBalanceOfAddress('miner address'));
-console.log(JSON.stringify(octCoin, null, 4));
-
-// console.log("Mining block 1...");
-// octCoin.addNewBlock(new Block({ amount: 4 }));
-// console.log("Mining block 2...");
-// octCoin.addNewBlock(new Block({ amount: 10 }));
-// console.log(JSON.stringify(octCoin, null, 4));
-// console.log("Is valid:"+ octCoin.isChainValid());
-// octCoin.chain[1].data = {amount:1};
-// console.log("Is valid now:"+ octCoin.isChainValid());
-
+module.exports.BlockChain = BlockChain;
+module.exports.Transaction = Transaction;
