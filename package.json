@@ -1,6 +1,8 @@
 {
-  "name": "CMNBlockChain",
+  "name": "cmnblockchain",
   "main": "src/blockchain.js",
+  "version": "1.0.1",
+  "repository": "github:phuduy2610/CMNBlockChain",
   "dependencies": {
     "crypto-js": "^4.1.1",
     "elliptic": "^6.5.4"
