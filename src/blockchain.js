@@ -7,10 +7,12 @@ class Transaction {
     toAddress;
     amount;
     signature;
+    timestamp;
     constructor(fromAddress, toAddress, amount) {
         this.fromAddress = fromAddress;
         this.toAddress = toAddress;
         this.amount = amount;
+        this.timestamp = new Date().toLocaleString();
     }
 
     calculateHash(){
@@ -56,7 +58,7 @@ class Block {
     transactions;
     previousHash;
     hash;
-    nounce;
+    nonce;
     constructor(transactions, timestamp, previousHash = '') {
 
 
@@ -64,18 +66,18 @@ class Block {
         this.transactions = transactions;
         this.previousHash = previousHash;
         this.hash = this.calculateHash();
-        this.nounce = 0;
+        this.nonce = 0;
     }
 
     //Tinh hash cua block hien tai
     calculateHash() {
-        return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nounce).toString();
+        return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString();
     }
 
     mineBlock(difficulty) {
         //Tinh hash den khi thoa man do kho
         while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
-            this.nounce++;
+            this.nonce++;
             this.hash = this.calculateHash();
         }
         console.log("Block mined:" + this.hash);
