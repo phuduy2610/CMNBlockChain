@@ -105,7 +105,7 @@ class BlockChain {
 
     //Ham khoi tao block dau tien
     createGenesisBlock() {
-        return new Block("Genesis block", new Date().toLocaleString(), "0");
+        return new Block([], new Date().toLocaleString(), "0");
     }
     //Ham lay block cuoi cung
     getLatestBlock() {
@@ -113,6 +113,8 @@ class BlockChain {
     }
     //Mine cac transaction dang trong hang doi
     minePendingTransactions(miningRewardAddress) {
+        const rewardTx = new Transaction(null,miningRewardAddress,this.miningReward);
+        this.pendingTransactions.push(rewardTx);
         let block = new Block(this.pendingTransactions, new Date().toLocaleString()); // pick a transactions instead of all trans
         block.previousHash = this.getLatestBlock().hash;
         block.mineBlock(this.difficulty);

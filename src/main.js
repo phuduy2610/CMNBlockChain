@@ -17,6 +17,7 @@ octCoin.minePendingTransactions(myWalletAddress);
 
 console.log("\n Balance of miner is:",octCoin.getBalanceOfAddress(myWalletAddress));
 
+console.log(octCoin);
 
 // console.log("Mining block 1...");
 // octCoin.addNewBlock(new Block({ amount: 4 }));
