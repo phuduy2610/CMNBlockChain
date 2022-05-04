@@ -122,10 +122,7 @@ class BlockChain {
         block.mineBlock(this.difficulty);
         console.log("Block successfully mined");
         this.chain.push(block);
-        this.pendingTransactions = [
-            new Transaction(null, miningRewardAddress, this.miningReward)
-        ];
-
+        this.pendingTransactions = [];
     }
     //Tao ra 1 transaction
     addTransaction(transaction) {
